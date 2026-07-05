@@ -1,0 +1,375 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>TOONHUB</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Anton&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        anton: ['Anton', 'sans-serif'],
+                    },
+                },
+            },
+        };
+    </script>
+    <style>
+        /* Ensure full viewport and no white flash */
+        html,
+        body {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            background: #0a0a0a;
+        }
+        #root {
+            width: 100%;
+            height: 100%;
+        }
+        /* Smooth transitions */
+        .toonhub-container {
+            transition: background-color 650ms cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .toonhub-item {
+            transition: transform 650ms cubic-bezier(0.4, 0, 0.2, 1),
+                filter 650ms cubic-bezier(0.4, 0, 0.2, 1),
+                opacity 650ms cubic-bezier(0.4, 0, 0.2, 1),
+                left 650ms cubic-bezier(0.4, 0, 0.2, 1);
+            will-change: transform, filter, opacity, left;
+        }
+        .toonhub-button {
+            transition: transform 150ms ease, background-color 150ms ease;
+        }
+        .toonhub-button:hover:not(:disabled) {
+            transform: scale(1.08);
+            background-color: rgba(255, 255, 255, 0.12);
+        }
+        .toonhub-button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        .toonhub-link {
+            transition: opacity 200ms ease;
+        }
+        .toonhub-link:hover {
+            opacity: 1;
+        }
+        /* Loading spinner */
+        .loader {
+            width: 48px;
+            height: 48px;
+            border: 4px solid rgba(255, 255, 255, 0.1);
+            border-top-color: #ffffff;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script>
+        // ================================================================
+        // DATA
+        // ================================================================
+        const IMAGES = [{
+            src: 'https://fifth-gentle-45902158.figma.site/_components/v2/4de492f6d9cf8244ad5293233e5c6f52407d42fc/1.02464a56.png',
+            bg: '#F4845F',
+            panel: '#F79B7F'
+        }, {
+            src: 'https://fifth-gentle-45902158.figma.site/_components/v2/4de492f6d9cf8244ad5293233e5c6f52407d42fc/2.b977faab.png',
+            bg: '#6BBF7A',
+            panel: '#85CC92'
+        }, {
+            src: 'https://fifth-gentle-45902158.figma.site/_components/v2/4de492f6d9cf8244ad5293233e5c6f52407d42fc/3.4df853b4.png',
+            bg: '#E882B4',
+            panel: '#ED9DC4'
+        }, {
+            src: 'https://fifth-gentle-45902158.figma.site/_components/v2/4de492f6d9cf8244ad5293233e5c6f52407d42fc/4.4457fbce.png',
+            bg: '#6EB5FF',
+            panel: '#8DC4FF'
+        }];
+
+        // ================================================================
+        // SVG GRAIN OVERLAY
+        // ================================================================
+        const GRAIN_SVG =
+            `data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='f'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23f)' opacity='0.08'/%3E%3C/svg%3E`;
+
+        // ================================================================
+        // SVG Icons (inline to avoid lucide-react dependency)
+        // ================================================================
+        function ArrowLeftIcon() {
+            return `<svg xmlns="http://www.w3.org/2000/svg" width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round"><path d="m12 19-7-7 7-7"/><path d="M19 12H5"/></svg>`;
+        }
+
+        function ArrowRightIcon() {
+            return `<svg xmlns="http://www.w3.org/2000/svg" width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round"><path d="m12 5 7 7-7 7"/><path d="M19 12H5"/></svg>`;
+        }
+
+        // ================================================================
+        // MAIN COMPONENT
+        // ================================================================
+        (function() {
+            const root = document.getElementById('root');
+
+            // State
+            let activeIndex = 0;
+            let isAnimating = false;
+            let isMobile = window.innerWidth < 640;
+            let imagesLoaded = false;
+
+            // DOM refs
+            let container = null;
+            let bgContainer = null;
+            let items = [];
+            let leftBtn = null;
+            let rightBtn = null;
+
+            // ============================================================
+            // Preload images
+            // ============================================================
+            function preloadImages() {
+                const promises = IMAGES.map((img) => {
+                    return new Promise((resolve) => {
+                        const image = new Image();
+                        image.src = img.src;
+                        image.onload = resolve;
+                        image.onerror = resolve;
+                    });
+                });
+                Promise.all(promises).then(() => {
+                    imagesLoaded = true;
+                    render();
+                });
+            }
+
+            // ============================================================
+            // Navigation
+            // ============================================================
+            function navigate(direction) {
+                if (isAnimating) return;
+                isAnimating = true;
+                if (direction === 'next') {
+                    activeIndex = (activeIndex + 1) % IMAGES.length;
+                } else {
+                    activeIndex = (activeIndex + 3) % IMAGES.length;
+                }
+                renderItems();
+                setTimeout(() => {
+                    isAnimating = false;
+                }, 650);
+            }
+
+            // ============================================================
+            // Check mobile
+            // ============================================================
+            function checkMobile() {
+                isMobile = window.innerWidth < 640;
+            }
+
+            // ============================================================
+            // Render
+            // ============================================================
+            function renderItems() {
+                if (!bgContainer || !items.length) return;
+
+                // Update background
+                bgContainer.style.backgroundColor = IMAGES[activeIndex].bg;
+
+                const centerIdx = activeIndex;
+                const leftIdx = (activeIndex + 3) % IMAGES.length;
+                const rightIdx = (activeIndex + 1) % IMAGES.length;
+                const backIdx = (activeIndex + 2) % IMAGES.length;
+
+                items.forEach((el, idx) => {
+                    let role = 'hidden';
+                    if (idx === centerIdx) role = 'center';
+                    else if (idx === leftIdx) role = 'left';
+                    else if (idx === rightIdx) role = 'right';
+                    else if (idx === backIdx) role = 'back';
+
+                    const mobile = isMobile;
+                    let scale = 1;
+                    let blur = 0;
+                    let opacity = 1;
+                    let zIndex = 1;
+                    let height = '0%';
+                    let bottom = '0';
+                    let left = '50%';
+
+                    if (role === 'center') {
+                        scale = mobile ? 1.25 : 1.68;
+                        blur = 0;
+                        opacity = 1;
+                        zIndex = 20;
+                        height = mobile ? '60%' : '92%';
+                        bottom = mobile ? '22%' : '0';
+                        left = '50%';
+                    } else if (role === 'left') {
+                        scale = 1;
+                        blur = 2;
+                        opacity = 0.85;
+                        zIndex = 10;
+                        height = mobile ? '16%' : '28%';
+                        bottom = mobile ? '32%' : '12%';
+                        left = mobile ? '20%' : '30%';
+                    } else if (role === 'right') {
+                        scale = 1;
+                        blur = 2;
+                        opacity = 0.85;
+                        zIndex = 10;
+                        height = mobile ? '16%' : '28%';
+                        bottom = mobile ? '32%' : '12%';
+                        left = mobile ? '80%' : '70%';
+                    } else if (role === 'back') {
+                        scale = 1;
+                        blur = 4;
+                        opacity = 1;
+                        zIndex = 5;
+                        height = mobile ? '13%' : '22%';
+                        bottom = mobile ? '32%' : '12%';
+                        left = '50%';
+                    } else {
+                        el.style.opacity = '0';
+                        el.style.pointerEvents = 'none';
+                        return;
+                    }
+
+                    el.style.left = left;
+                    el.style.transform = `translate(-50%, -50%) scale(${scale})`;
+                    el.style.filter = `blur(${blur}px)`;
+                    el.style.opacity = opacity;
+                    el.style.zIndex = zIndex;
+                    el.style.height = height;
+                    el.style.bottom = bottom;
+                    el.style.pointerEvents = 'auto';
+                    el.style.position = 'absolute';
+                });
+            }
+
+            function render() {
+                if (!imagesLoaded) {
+                    root.innerHTML = `
+                        <div class="w-screen h-screen flex items-center justify-center bg-[#0a0a0a] text-white font-sans">
+                            <div class="text-center">
+                                <div class="loader mx-auto mb-4"></div>
+                                <p class="text-sm text-white/60">Loading TOONHUB...</p>
+                            </div>
+                        </div>
+                    `;
+                    return;
+                }
+
+                // Build HTML
+                const html = `
+                    <div class="toonhub-container w-full h-screen overflow-hidden font-sans relative" id="bgContainer" style="background-color: ${IMAGES[activeIndex].bg}">
+                        <div class="relative w-full h-screen overflow-hidden">
+
+                            <!-- Grain overlay -->
+                            <div class="absolute inset-0 pointer-events-none z-[50] opacity-40" style="background-image: url('${GRAIN_SVG}'); background-size: 200px 200px; background-repeat: repeat;"></div>
+
+                            <!-- Giant ghost text -->
+                            <div class="absolute inset-x-0 flex items-center justify-center pointer-events-none select-none z-[2] top-[18%]">
+                                <span class="font-anton font-black uppercase text-white leading-none tracking-[-0.02em] whitespace-nowrap" style="font-size: clamp(90px, 28vw, 380px);">3D SHAPE</span>
+                            </div>
+
+                            <!-- Top-left brand -->
+                            <div class="absolute top-6 left-4 sm:left-8 z-[60]">
+                                <span class="text-xs font-semibold uppercase text-white/90 tracking-[0.18em]">TOONHUB</span>
+                            </div>
+
+                            <!-- Carousel items -->
+                            <div class="absolute inset-0 z-[3]">
+                                ${IMAGES.map((img, idx) => `
+                                    <div class="toonhub-item absolute top-1/2 aspect-[0.6/1] flex items-center justify-center pointer-events-auto" data-index="${idx}" style="left: 50%; transform: translate(-50%, -50%) scale(1); filter: blur(0px); opacity: 1; z-index: 1; height: 0%; bottom: 0;">
+                                        <img src="${img.src}" alt="Character ${idx + 1}" class="w-full h-full object-contain object-bottom" draggable="false" />
+                                    </div>
+                                `).join('')}
+                            </div>
+
+                            <!-- Bottom-left text & nav -->
+                            <div class="absolute bottom-6 left-4 sm:bottom-20 sm:left-24 z-[60] max-w-[320px]">
+                                <p class="font-bold uppercase tracking-widest mb-2 sm:mb-3 text-base sm:text-[22px] text-white/95">TOONHUB FIGURINES</p>
+                                <p class="hidden sm:block text-xs sm:text-sm text-white/85 leading-relaxed mb-4 sm:mb-5">The artwork is stunning, shipped fully prepared. The finish is a vision, the 3D craft is flawless. Many thanks! Wishing you the win. Order now.</p>
+                                <div class="flex gap-3">
+                                    <button class="toonhub-button w-12 h-12 sm:w-16 sm:h-16 rounded-full bg-transparent border-2 border-white flex items-center justify-center text-white" id="leftBtn" aria-label="Previous">
+                                        ${ArrowLeftIcon()}
+                                    </button>
+                                    <button class="toonhub-button w-12 h-12 sm:w-16 sm:h-16 rounded-full bg-transparent border-2 border-white flex items-center justify-center text-white" id="rightBtn" aria-label="Next">
+                                        ${ArrowRightIcon()}
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- Bottom-right link -->
+                            <div class="absolute bottom-6 right-4 sm:bottom-20 sm:right-10 z-[60]">
+                                <a href="#" class="toonhub-link flex items-center gap-2 font-anton text-white/95 hover:text-white transition-colors duration-200 no-underline uppercase tracking-[-0.02em] leading-none" style="font-size: clamp(20px, 4vw, 56px);">
+                                    DISCOVER IT
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round" class="sm:w-8 sm:h-8"><path d="m12 5 7 7-7 7"/><path d="M19 12H5"/></svg>
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                `;
+
+                root.innerHTML = html;
+
+                // Get refs
+                bgContainer = document.getElementById('bgContainer');
+                const itemEls = document.querySelectorAll('.toonhub-item');
+                items = Array.from(itemEls);
+
+                leftBtn = document.getElementById('leftBtn');
+                rightBtn = document.getElementById('rightBtn');
+
+                // Bind events
+                if (leftBtn) {
+                    leftBtn.addEventListener('click', () => navigate('prev'));
+                }
+                if (rightBtn) {
+                    rightBtn.addEventListener('click', () => navigate('next'));
+                }
+
+                // Initial render
+                renderItems();
+
+                // Window resize
+                window.addEventListener('resize', () => {
+                    checkMobile();
+                    renderItems();
+                });
+            }
+
+            // ============================================================
+            // Start
+            // ============================================================
+            checkMobile();
+            preloadImages();
+
+            // Handle window resize for mobile detection
+            window.addEventListener('resize', () => {
+                checkMobile();
+                if (imagesLoaded) {
+                    renderItems();
+                }
+            });
+
+        })();
+    </script>
+</body>
+</html>
