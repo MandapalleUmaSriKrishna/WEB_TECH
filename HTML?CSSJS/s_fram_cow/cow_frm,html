@@ -1,0 +1,1204 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>🐄 Dairy Farm Management System</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet" />
+    <style>
+        /* ================================================================
+           ROOT VARIABLES & RESET
+           ================================================================ */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary: #2E7D32;
+            --primary-light: #4CAF50;
+            --primary-dark: #1B5E20;
+            --primary-bg: rgba(46, 125, 50, 0.08);
+            --secondary: #FF8F00;
+            --accent: #1565C0;
+            --bg: #F5F7FA;
+            --card-bg: #FFFFFF;
+            --text-primary: #1A1A2E;
+            --text-secondary: #4A4A6A;
+            --text-muted: #8888AA;
+            --border: #E8ECF1;
+            --shadow: 0 4px 20px rgba(0, 0, 0, 0.06);
+            --shadow-hover: 0 8px 40px rgba(0, 0, 0, 0.12);
+            --radius: 16px;
+            --radius-sm: 10px;
+            --transition: 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: var(--bg);
+            color: var(--text-primary);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        /* ================================================================
+           APP CONTAINER
+           ================================================================ */
+        .app-container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        /* ================================================================
+           HEADER
+           ================================================================ */
+        .header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 20px 28px;
+            background: var(--card-bg);
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+            margin-bottom: 24px;
+            flex-wrap: wrap;
+            gap: 16px;
+        }
+
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .header-left .logo {
+            font-size: 32px;
+        }
+
+        .header-left h1 {
+            font-size: 22px;
+            font-weight: 800;
+            color: var(--primary-dark);
+        }
+
+        .header-left h1 span {
+            color: var(--secondary);
+        }
+
+        .header-left .subtitle {
+            font-size: 12px;
+            color: var(--text-muted);
+            font-weight: 400;
+            display: block;
+        }
+
+        .header-right {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .header-right .date-display {
+            font-size: 13px;
+            color: var(--text-secondary);
+            background: var(--bg);
+            padding: 8px 16px;
+            border-radius: 8px;
+        }
+
+        .btn {
+            padding: 10px 24px;
+            border: none;
+            border-radius: 8px;
+            font-family: 'Inter', sans-serif;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: var(--transition);
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn-primary {
+            background: var(--primary);
+            color: #fff;
+        }
+
+        .btn-primary:hover {
+            background: var(--primary-dark);
+            transform: translateY(-2px);
+            box-shadow: 0 8px 24px rgba(46, 125, 50, 0.3);
+        }
+
+        .btn-secondary {
+            background: var(--bg);
+            color: var(--text-secondary);
+            border: 1px solid var(--border);
+        }
+
+        .btn-secondary:hover {
+            background: var(--border);
+            transform: translateY(-2px);
+        }
+
+        .btn-accent {
+            background: var(--secondary);
+            color: #fff;
+        }
+
+        .btn-accent:hover {
+            background: #E6A200;
+            transform: translateY(-2px);
+            box-shadow: 0 8px 24px rgba(255, 143, 0, 0.3);
+        }
+
+        .btn-danger {
+            background: #DC3545;
+            color: #fff;
+        }
+
+        .btn-danger:hover {
+            background: #C82333;
+            transform: translateY(-2px);
+        }
+
+        .btn-sm {
+            padding: 6px 14px;
+            font-size: 11px;
+        }
+
+        /* ================================================================
+           STATS GRID
+           ================================================================ */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+
+        .stat-card {
+            background: var(--card-bg);
+            padding: 20px 24px;
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+            transition: var(--transition);
+            border-left: 4px solid var(--primary);
+        }
+
+        .stat-card:hover {
+            transform: translateY(-4px);
+            box-shadow: var(--shadow-hover);
+        }
+
+        .stat-card .stat-icon {
+            font-size: 24px;
+            margin-bottom: 8px;
+        }
+
+        .stat-card .stat-value {
+            font-size: 28px;
+            font-weight: 800;
+            color: var(--text-primary);
+        }
+
+        .stat-card .stat-label {
+            font-size: 13px;
+            color: var(--text-muted);
+            font-weight: 500;
+        }
+
+        .stat-card .stat-change {
+            font-size: 12px;
+            font-weight: 600;
+            margin-top: 4px;
+        }
+
+        .stat-card .stat-change.positive {
+            color: var(--primary);
+        }
+        .stat-card .stat-change.negative {
+            color: #DC3545;
+        }
+
+        .stat-card.accent {
+            border-left-color: var(--secondary);
+        }
+        .stat-card.accent .stat-value {
+            color: var(--secondary);
+        }
+
+        .stat-card.blue {
+            border-left-color: var(--accent);
+        }
+        .stat-card.blue .stat-value {
+            color: var(--accent);
+        }
+
+        .stat-card.pink {
+            border-left-color: #E91E63;
+        }
+        .stat-card.pink .stat-value {
+            color: #E91E63;
+        }
+
+        /* ================================================================
+           MAIN GRID
+           ================================================================ */
+        .main-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 24px;
+            margin-bottom: 24px;
+        }
+
+        @media (max-width: 1024px) {
+            .main-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* ================================================================
+           CARDS
+           ================================================================ */
+        .card {
+            background: var(--card-bg);
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+            overflow: hidden;
+            transition: var(--transition);
+        }
+
+        .card:hover {
+            box-shadow: var(--shadow-hover);
+        }
+
+        .card-header {
+            padding: 18px 24px;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .card-header h3 {
+            font-size: 16px;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .card-body {
+            padding: 24px;
+        }
+
+        /* ================================================================
+           FORM
+           ================================================================ */
+        .form-group {
+            margin-bottom: 16px;
+        }
+
+        .form-group label {
+            display: block;
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text-secondary);
+            margin-bottom: 6px;
+        }
+
+        .form-group input,
+        .form-group select {
+            width: 100%;
+            padding: 10px 14px;
+            border: 2px solid var(--border);
+            border-radius: var(--radius-sm);
+            font-family: 'Inter', sans-serif;
+            font-size: 14px;
+            transition: var(--transition);
+            background: var(--bg);
+            color: var(--text-primary);
+        }
+
+        .form-group input:focus,
+        .form-group select:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 4px rgba(46, 125, 50, 0.1);
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+        }
+
+        .form-actions {
+            display: flex;
+            gap: 12px;
+            margin-top: 8px;
+            flex-wrap: wrap;
+        }
+
+        /* ================================================================
+           TABLE
+           ================================================================ */
+        .table-responsive {
+            overflow-x: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 13px;
+        }
+
+        table thead {
+            background: var(--bg);
+        }
+
+        table th {
+            padding: 12px 16px;
+            text-align: left;
+            font-weight: 600;
+            color: var(--text-secondary);
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        table td {
+            padding: 12px 16px;
+            border-bottom: 1px solid var(--border);
+            color: var(--text-secondary);
+        }
+
+        table tbody tr:hover {
+            background: var(--primary-bg);
+        }
+
+        table .actions {
+            display: flex;
+            gap: 6px;
+        }
+
+        .badge {
+            padding: 2px 10px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: 600;
+            display: inline-block;
+        }
+
+        .badge-active {
+            background: #E8F5E9;
+            color: var(--primary);
+        }
+
+        .badge-inactive {
+            background: #FBE9E7;
+            color: #D84315;
+        }
+
+        .badge-milking {
+            background: #E3F2FD;
+            color: var(--accent);
+        }
+
+        /* ================================================================
+           CALCULATIONS PANEL
+           ================================================================ */
+        .calc-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 12px;
+            margin-top: 16px;
+        }
+
+        .calc-item {
+            padding: 14px 18px;
+            background: var(--bg);
+            border-radius: var(--radius-sm);
+            text-align: center;
+        }
+
+        .calc-item .label {
+            font-size: 11px;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .calc-item .value {
+            font-size: 20px;
+            font-weight: 800;
+            color: var(--text-primary);
+            margin-top: 4px;
+        }
+
+        .calc-item .value.green {
+            color: var(--primary);
+        }
+        .calc-item .value.gold {
+            color: var(--secondary);
+        }
+        .calc-item .value.blue {
+            color: var(--accent);
+        }
+
+        /* ================================================================
+           REPORT SECTION
+           ================================================================ */
+        .report-section {
+            background: var(--card-bg);
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+            padding: 24px;
+            margin-top: 24px;
+        }
+
+        .report-section h3 {
+            font-size: 18px;
+            font-weight: 700;
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .report-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 16px;
+        }
+
+        .report-item {
+            padding: 16px 20px;
+            background: var(--bg);
+            border-radius: var(--radius-sm);
+            border-left: 3px solid var(--primary);
+        }
+
+        .report-item .label {
+            font-size: 12px;
+            color: var(--text-muted);
+        }
+
+        .report-item .value {
+            font-size: 18px;
+            font-weight: 700;
+            color: var(--text-primary);
+            margin-top: 4px;
+        }
+
+        /* ================================================================
+           TOAST
+           ================================================================ */
+        .toast {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            padding: 16px 24px;
+            background: var(--text-primary);
+            color: #fff;
+            border-radius: var(--radius-sm);
+            box-shadow: var(--shadow-hover);
+            z-index: 1000;
+            opacity: 0;
+            transform: translateY(20px);
+            transition: all 0.4s ease;
+            max-width: 360px;
+        }
+
+        .toast.show {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .toast.success {
+            background: var(--primary);
+        }
+        .toast.error {
+            background: #DC3545;
+        }
+        .toast.info {
+            background: var(--accent);
+        }
+
+        /* ================================================================
+           RESPONSIVE
+           ================================================================ */
+        @media (max-width: 768px) {
+            .header {
+                padding: 16px 20px;
+            }
+            .header-left h1 {
+                font-size: 18px;
+            }
+            .header-right .date-display {
+                font-size: 11px;
+                padding: 6px 12px;
+            }
+            .stats-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+            .form-row {
+                grid-template-columns: 1fr;
+            }
+            .calc-grid {
+                grid-template-columns: 1fr 1fr;
+            }
+            .report-grid {
+                grid-template-columns: 1fr 1fr;
+            }
+            .btn {
+                padding: 8px 16px;
+                font-size: 12px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+            .calc-grid {
+                grid-template-columns: 1fr;
+            }
+            .report-grid {
+                grid-template-columns: 1fr;
+            }
+            .card-body {
+                padding: 16px;
+            }
+            .form-actions {
+                flex-direction: column;
+            }
+            .form-actions .btn {
+                width: 100%;
+                justify-content: center;
+            }
+        }
+
+        /* Print styles */
+        @media print {
+            .header-right,
+            .form-actions,
+            .btn {
+                display: none !important;
+            }
+            .card {
+                box-shadow: none !important;
+                border: 1px solid var(--border);
+            }
+            .stats-grid {
+                page-break-inside: avoid;
+            }
+        }
+
+        /* Scrollable table container */
+        .table-scroll {
+            max-height: 320px;
+            overflow-y: auto;
+        }
+
+        .table-scroll::-webkit-scrollbar {
+            width: 4px;
+        }
+        .table-scroll::-webkit-scrollbar-track {
+            background: var(--bg);
+        }
+        .table-scroll::-webkit-scrollbar-thumb {
+            background: var(--border);
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="app-container" id="app">
+
+        <!-- ============================================================
+        HEADER
+        ============================================================ -->
+        <header class="header">
+            <div class="header-left">
+                <span class="logo">🐄</span>
+                <div>
+                    <h1>Dairy<span>Farm</span> Manager</h1>
+                    <span class="subtitle">Complete Farm Management System</span>
+                </div>
+            </div>
+            <div class="header-right">
+                <span class="date-display" id="dateDisplay">📅 Loading...</span>
+                <button class="btn btn-secondary" onclick="exportReport()">📊 Export Report</button>
+                <button class="btn btn-primary" onclick="printReport()">🖨️ Print</button>
+            </div>
+        </header>
+
+        <!-- ============================================================
+        STATS
+        ============================================================ -->
+        <div class="stats-grid" id="statsGrid">
+            <div class="stat-card">
+                <div class="stat-icon">🐄</div>
+                <div class="stat-value" id="totalCows">0</div>
+                <div class="stat-label">Total Cows</div>
+                <div class="stat-change positive">+2 this month</div>
+            </div>
+            <div class="stat-card accent">
+                <div class="stat-icon">🥛</div>
+                <div class="stat-value" id="totalMilk">0</div>
+                <div class="stat-label">Total Milk (L)</div>
+                <div class="stat-change positive">+12% vs last month</div>
+            </div>
+            <div class="stat-card blue">
+                <div class="stat-icon">💰</div>
+                <div class="stat-value" id="totalRevenue">₹0</div>
+                <div class="stat-label">Total Revenue</div>
+                <div class="stat-change positive">+8% vs last month</div>
+            </div>
+            <div class="stat-card pink">
+                <div class="stat-icon">📊</div>
+                <div class="stat-value" id="avgMilk">0</div>
+                <div class="stat-label">Avg Milk/Cow (L)</div>
+                <div class="stat-change positive">+5% vs last month</div>
+            </div>
+        </div>
+
+        <!-- ============================================================
+        MAIN GRID
+        ============================================================ -->
+        <div class="main-grid">
+
+            <!-- LEFT: ADD COW FORM -->
+            <div class="card">
+                <div class="card-header">
+                    <h3>➕ Add New Cow</h3>
+                    <span style="font-size:12px;color:var(--text-muted);">Register new animal</span>
+                </div>
+                <div class="card-body">
+                    <form id="cowForm" onsubmit="addCow(event)">
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>Cow ID</label>
+                                <input type="text" id="cowId" placeholder="e.g. C-001" required />
+                            </div>
+                            <div class="form-group">
+                                <label>Name</label>
+                                <input type="text" id="cowName" placeholder="e.g. Ganga" required />
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>Breed</label>
+                                <select id="cowBreed">
+                                    <option value="Holstein">Holstein</option>
+                                    <option value="Jersey">Jersey</option>
+                                    <option value="Sahiwal">Sahiwal</option>
+                                    <option value="Red Sindhi">Red Sindhi</option>
+                                    <option value="Gir">Gir</option>
+                                    <option value="Other">Other</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label>Daily Milk (L)</label>
+                                <input type="number" id="cowMilk" placeholder="e.g. 12" min="0" step="0.1" required />
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>Milk Price (₹/L)</label>
+                                <input type="number" id="cowPrice" placeholder="e.g. 50" min="0" step="1" value="50" required />
+                            </div>
+                            <div class="form-group">
+                                <label>Status</label>
+                                <select id="cowStatus">
+                                    <option value="active">Active</option>
+                                    <option value="milking">Milking</option>
+                                    <option value="inactive">Inactive</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="form-actions">
+                            <button type="submit" class="btn btn-primary">➕ Add Cow</button>
+                            <button type="reset" class="btn btn-secondary">↻ Reset</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- RIGHT: CALCULATIONS & SUMMARY -->
+            <div class="card">
+                <div class="card-header">
+                    <h3>📊 Quick Calculations</h3>
+                    <span style="font-size:12px;color:var(--text-muted);">Real-time farm metrics</span>
+                </div>
+                <div class="card-body">
+                    <div class="calc-grid">
+                        <div class="calc-item">
+                            <div class="label">Total Daily Milk</div>
+                            <div class="value green" id="dailyMilk">0 L</div>
+                        </div>
+                        <div class="calc-item">
+                            <div class="label">Monthly Milk</div>
+                            <div class="value gold" id="monthlyMilk">0 L</div>
+                        </div>
+                        <div class="calc-item">
+                            <div class="label">Monthly Revenue</div>
+                            <div class="value blue" id="monthlyRevenue">₹0</div>
+                        </div>
+                    </div>
+
+                    <div style="margin-top:16px;padding-top:16px;border-top:1px solid var(--border);">
+                        <div class="calc-grid">
+                            <div class="calc-item">
+                                <div class="label">Active Cows</div>
+                                <div class="value green" id="activeCows">0</div>
+                            </div>
+                            <div class="calc-item">
+                                <div class="label">Milking Cows</div>
+                                <div class="value gold" id="milkingCows">0</div>
+                            </div>
+                            <div class="calc-item">
+                                <div class="label">Avg Milk/Cow</div>
+                                <div class="value blue" id="avgCowMilk">0 L</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <button class="btn btn-accent" style="width:100%;margin-top:16px;" onclick="updateCalculations()">
+                        🔄 Refresh Calculations
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- ============================================================
+        COW LIST
+        ============================================================ -->
+        <div class="card" style="margin-top:24px;">
+            <div class="card-header">
+                <h3>🐄 Cow Records</h3>
+                <div style="display:flex;gap:8px;align-items:center;">
+                    <span style="font-size:12px;color:var(--text-muted);" id="recordCount">0 records</span>
+                    <button class="btn btn-danger btn-sm" onclick="clearAllData()">🗑️ Clear All</button>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <div class="table-scroll">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>#</th>
+                                    <th>ID</th>
+                                    <th>Name</th>
+                                    <th>Breed</th>
+                                    <th>Milk (L)</th>
+                                    <th>Price (₹)</th>
+                                    <th>Status</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="cowTableBody">
+                                <!-- Rows inserted by JS -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ============================================================
+        REPORT SECTION
+        ============================================================ -->
+        <div class="report-section" id="reportSection">
+            <h3>📋 Farm Report</h3>
+            <div class="report-grid" id="reportGrid">
+                <div class="report-item">
+                    <div class="label">Total Cows</div>
+                    <div class="value" id="rTotalCows">0</div>
+                </div>
+                <div class="report-item">
+                    <div class="label">Total Milk Production</div>
+                    <div class="value" id="rTotalMilk">0 L</div>
+                </div>
+                <div class="report-item">
+                    <div class="label">Average Milk/Cow</div>
+                    <div class="value" id="rAvgMilk">0 L</div>
+                </div>
+                <div class="report-item">
+                    <div class="label">Total Revenue</div>
+                    <div class="value" id="rRevenue">₹0</div>
+                </div>
+                <div class="report-item">
+                    <div class="label">Active Cows</div>
+                    <div class="value" id="rActive">0</div>
+                </div>
+                <div class="report-item">
+                    <div class="label">Milking Cows</div>
+                    <div class="value" id="rMilking">0</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ============================================================
+        TOAST NOTIFICATION
+        ============================================================ -->
+        <div class="toast" id="toast"></div>
+    </div>
+
+    <script>
+        // ================================================================
+        // DATA STORE
+        // ================================================================
+        let cows = [];
+        let nextId = 1;
+
+        // Load from localStorage
+        function loadData() {
+            const saved = localStorage.getItem('dairyFarmData');
+            if (saved) {
+                try {
+                    const data = JSON.parse(saved);
+                    cows = data.cows || [];
+                    nextId = data.nextId || 1;
+                } catch (e) {
+                    cows = [];
+                    nextId = 1;
+                }
+            }
+        }
+
+        function saveData() {
+            localStorage.setItem('dairyFarmData', JSON.stringify({ cows, nextId }));
+        }
+
+        // ================================================================
+        // DATE DISPLAY
+        // ================================================================
+        function updateDate() {
+            const now = new Date();
+            const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+            document.getElementById('dateDisplay').textContent = '📅 ' + now.toLocaleDateString('en-IN', options);
+        }
+
+        // ================================================================
+        // TOAST
+        // ================================================================
+        function showToast(message, type = 'success') {
+            const toast = document.getElementById('toast');
+            toast.textContent = message;
+            toast.className = 'toast ' + type + ' show';
+            clearTimeout(toast._timer);
+            toast._timer = setTimeout(() => {
+                toast.classList.remove('show');
+            }, 3000);
+        }
+
+        // ================================================================
+        // CRUD OPERATIONS
+        // ================================================================
+        function addCow(e) {
+            e.preventDefault();
+
+            const id = document.getElementById('cowId').value.trim();
+            const name = document.getElementById('cowName').value.trim();
+            const breed = document.getElementById('cowBreed').value;
+            const milk = parseFloat(document.getElementById('cowMilk').value);
+            const price = parseFloat(document.getElementById('cowPrice').value);
+            const status = document.getElementById('cowStatus').value;
+
+            if (!id || !name || isNaN(milk) || milk < 0 || isNaN(price) || price < 0) {
+                showToast('Please fill all fields correctly.', 'error');
+                return;
+            }
+
+            // Check duplicate ID
+            if (cows.some(c => c.id === id)) {
+                showToast('Cow ID already exists!', 'error');
+                return;
+            }
+
+            const cow = {
+                id: id,
+                name: name,
+                breed: breed,
+                milk: milk,
+                price: price,
+                status: status,
+                added: new Date().toISOString()
+            };
+
+            cows.push(cow);
+            saveData();
+            renderAll();
+            showToast(`🐄 ${name} added successfully!`, 'success');
+            document.getElementById('cowForm').reset();
+            document.getElementById('cowId').focus();
+        }
+
+        function deleteCow(id) {
+            if (!confirm('Remove this cow from records?')) return;
+            const cow = cows.find(c => c.id === id);
+            cows = cows.filter(c => c.id !== id);
+            saveData();
+            renderAll();
+            showToast(`🗑️ ${cow ? cow.name : 'Cow'} removed.`, 'info');
+        }
+
+        function clearAllData() {
+            if (!confirm('⚠️ Delete ALL cow records? This cannot be undone!')) return;
+            cows = [];
+            nextId = 1;
+            saveData();
+            renderAll();
+            showToast('All records cleared.', 'info');
+        }
+
+        // ================================================================
+        // CALCULATIONS
+        // ================================================================
+        function calculateMetrics() {
+            const total = cows.length;
+            const totalMilk = cows.reduce((sum, c) => sum + c.milk, 0);
+            const totalRevenue = cows.reduce((sum, c) => sum + (c.milk * c.price), 0);
+            const active = cows.filter(c => c.status === 'active').length;
+            const milking = cows.filter(c => c.status === 'milking').length;
+            const avgMilk = total > 0 ? totalMilk / total : 0;
+
+            // Monthly projections (30 days)
+            const monthlyMilk = totalMilk * 30;
+            const monthlyRevenue = totalRevenue * 30;
+
+            return {
+                total,
+                totalMilk,
+                totalRevenue,
+                active,
+                milking,
+                avgMilk,
+                monthlyMilk,
+                monthlyRevenue
+            };
+        }
+
+        // ================================================================
+        // RENDER FUNCTIONS
+        // ================================================================
+        function renderStats() {
+            const m = calculateMetrics();
+            document.getElementById('totalCows').textContent = m.total;
+            document.getElementById('totalMilk').textContent = m.totalMilk.toFixed(1);
+            document.getElementById('totalRevenue').textContent = '₹' + m.totalRevenue.toFixed(0);
+            document.getElementById('avgMilk').textContent = m.avgMilk.toFixed(1);
+        }
+
+        function renderCalculations() {
+            const m = calculateMetrics();
+            document.getElementById('dailyMilk').textContent = m.totalMilk.toFixed(1) + ' L';
+            document.getElementById('monthlyMilk').textContent = m.monthlyMilk.toFixed(1) + ' L';
+            document.getElementById('monthlyRevenue').textContent = '₹' + m.monthlyRevenue.toFixed(0);
+            document.getElementById('activeCows').textContent = m.active;
+            document.getElementById('milkingCows').textContent = m.milking;
+            document.getElementById('avgCowMilk').textContent = m.avgMilk.toFixed(1) + ' L';
+        }
+
+        function renderTable() {
+            const tbody = document.getElementById('cowTableBody');
+            const count = document.getElementById('recordCount');
+
+            if (cows.length === 0) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="8" style="text-align:center;padding:40px 0;color:var(--text-muted);">
+                            🐄 No cows added yet. Add your first cow above!
+                        </td>
+                    </tr>
+                `;
+                count.textContent = '0 records';
+                return;
+            }
+
+            let html = '';
+            cows.forEach((cow, index) => {
+                const statusBadge = cow.status === 'active' ? 'badge-active' :
+                    cow.status === 'milking' ? 'badge-milking' : 'badge-inactive';
+                html += `
+                    <tr>
+                        <td>${index + 1}</td>
+                        <td><strong>${cow.id}</strong></td>
+                        <td>${cow.name}</td>
+                        <td>${cow.breed}</td>
+                        <td>${cow.milk.toFixed(1)} L</td>
+                        <td>₹${cow.price.toFixed(0)}</td>
+                        <td><span class="badge ${statusBadge}">${cow.status}</span></td>
+                        <td>
+                            <button class="btn btn-danger btn-sm" onclick="deleteCow('${cow.id}')">🗑️</button>
+                        </td>
+                    </tr>
+                `;
+            });
+
+            tbody.innerHTML = html;
+            count.textContent = cows.length + ' records';
+        }
+
+        function renderReport() {
+            const m = calculateMetrics();
+            document.getElementById('rTotalCows').textContent = m.total;
+            document.getElementById('rTotalMilk').textContent = m.totalMilk.toFixed(1) + ' L';
+            document.getElementById('rAvgMilk').textContent = m.avgMilk.toFixed(1) + ' L';
+            document.getElementById('rRevenue').textContent = '₹' + m.totalRevenue.toFixed(0);
+            document.getElementById('rActive').textContent = m.active;
+            document.getElementById('rMilking').textContent = m.milking;
+        }
+
+        function renderAll() {
+            renderStats();
+            renderCalculations();
+            renderTable();
+            renderReport();
+        }
+
+        // ================================================================
+        // UPDATE CALCULATIONS (Manual Refresh)
+        // ================================================================
+        function updateCalculations() {
+            renderAll();
+            showToast('📊 Calculations updated!', 'info');
+        }
+
+        // ================================================================
+        // EXPORT / PRINT
+        // ================================================================
+        function exportReport() {
+            const m = calculateMetrics();
+            let text = '🐄 DAIRY FARM REPORT\n';
+            text += '='.repeat(50) + '\n';
+            text += `Date: ${new Date().toLocaleDateString('en-IN')}\n`;
+            text += `Total Cows: ${m.total}\n`;
+            text += `Total Milk: ${m.totalMilk.toFixed(1)} L\n`;
+            text += `Avg Milk/Cow: ${m.avgMilk.toFixed(1)} L\n`;
+            text += `Total Revenue: ₹${m.totalRevenue.toFixed(0)}\n`;
+            text += `Active Cows: ${m.active}\n`;
+            text += `Milking Cows: ${m.milking}\n`;
+            text += `Monthly Milk Projection: ${m.monthlyMilk.toFixed(1)} L\n`;
+            text += `Monthly Revenue Projection: ₹${m.monthlyRevenue.toFixed(0)}\n`;
+            text += '='.repeat(50) + '\n';
+            text += '🐄 COW DETAILS:\n';
+            cows.forEach(c => {
+                text += `${c.id} | ${c.name} | ${c.breed} | ${c.milk}L | ₹${c.price} | ${c.status}\n`;
+            });
+
+            const blob = new Blob([text], { type: 'text/plain' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `farm_report_${new Date().toISOString().slice(0,10)}.txt`;
+            a.click();
+            URL.revokeObjectURL(url);
+            showToast('📄 Report exported!', 'success');
+        }
+
+        function printReport() {
+            window.print();
+        }
+
+        // ================================================================
+        // SAMPLE DATA
+        // ================================================================
+        function loadSampleData() {
+            if (cows.length > 0) {
+                if (!confirm('This will replace your current data. Continue?')) return;
+            }
+
+            cows = [{
+                id: 'C-001',
+                name: 'Ganga',
+                breed: 'Holstein',
+                milk: 15.5,
+                price: 55,
+                status: 'milking',
+                added: new Date().toISOString()
+            }, {
+                id: 'C-002',
+                name: 'Yamuna',
+                breed: 'Jersey',
+                milk: 12.0,
+                price: 60,
+                status: 'milking',
+                added: new Date().toISOString()
+            }, {
+                id: 'C-003',
+                name: 'Saraswati',
+                breed: 'Sahiwal',
+                milk: 10.5,
+                price: 50,
+                status: 'active',
+                added: new Date().toISOString()
+            }, {
+                id: 'C-004',
+                name: 'Lakshmi',
+                breed: 'Gir',
+                milk: 8.0,
+                price: 45,
+                status: 'active',
+                added: new Date().toISOString()
+            }, {
+                id: 'C-005',
+                name: 'Durga',
+                breed: 'Red Sindhi',
+                milk: 6.5,
+                price: 40,
+                status: 'inactive',
+                added: new Date().toISOString()
+            }];
+
+            saveData();
+            renderAll();
+            showToast('📋 Sample data loaded!', 'success');
+        }
+
+        // ================================================================
+        // KEYBOARD SHORTCUTS
+        // ================================================================
+        document.addEventListener('keydown', (e) => {
+            if (e.ctrlKey && e.key === 'r') {
+                e.preventDefault();
+                updateCalculations();
+            }
+            if (e.ctrlKey && e.key === 'p') {
+                e.preventDefault();
+                printReport();
+            }
+        });
+
+        // ================================================================
+        // INIT
+        // ================================================================
+        loadData();
+        updateDate();
+        renderAll();
+
+        // Auto-save on any change
+        console.log('🐄 Dairy Farm Manager loaded.');
+        console.log('📋 ' + cows.length + ' cows in database.');
+        console.log('⌨️ Shortcuts: Ctrl+R to refresh, Ctrl+P to print');
+
+        // If no data, load sample
+        if (cows.length === 0) {
+            setTimeout(() => {
+                if (confirm('📋 Load sample data to get started?')) {
+                    loadSampleData();
+                }
+            }, 500);
+        }
+    </script>
+
+</body>
+</html>
