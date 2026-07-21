@@ -1,0 +1,499 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Neon Particle Heart</title>
+    <style>
+        :root {
+            --bg: #0a0a0a;
+            --neon-pink: #ff2d75;
+            --neon-purple: #b829e8;
+            --neon-cyan: #00e5ff;
+            --neon-gold: #ffd700;
+            --particle-glow: 0 0 20px;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: var(--bg);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            overflow: hidden;
+            font-family: 'Georgia', serif;
+            cursor: pointer;
+            user-select: none;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            pointer-events: none;
+        }
+
+        .message {
+            position: absolute;
+            bottom: 60px;
+            color: rgba(255, 255, 255, 0.6);
+            font-size: 0.85rem;
+            letter-spacing: 2px;
+            text-align: center;
+            animation: fadeMessage 3s ease-in-out infinite;
+        }
+
+        @keyframes fadeMessage {
+            0%,
+            100% {
+                opacity: 0.4;
+            }
+            50% {
+                opacity: 1;
+            }
+        }
+
+        .click-hint {
+            position: absolute;
+            top: 30px;
+            color: rgba(255, 255, 255, 0.4);
+            font-size: 0.75rem;
+            letter-spacing: 2px;
+            pointer-events: none;
+            animation: fadeMessage 2s ease-in-out infinite;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="canvas"></canvas>
+    <div class="click-hint">✨ CLICK ANYWHERE ✨</div>
+    <div class="message">made with love</div>
+
+    <script>
+        // ============================================================
+        // NEON PARTICLE HEART - COMPLETE ANIMATION ENGINE
+        // ============================================================
+
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+
+        let W, H;
+        let particles = [];
+        let mouseX = 0,
+            mouseY = 0;
+        let clickBursts = [];
+        let time = 0;
+        let heartScale = 1;
+        let targetHeartScale = 1;
+        let hueShift = 0;
+
+        // --- RESIZE ---
+        function resize() {
+            W = canvas.width = window.innerWidth;
+            H = canvas.height = window.innerHeight;
+            mouseX = W / 2;
+            mouseY = H / 2;
+        }
+        window.addEventListener('resize', resize);
+        resize();
+
+        // --- MOUSE ---
+        window.addEventListener('mousemove', (e) => {
+            mouseX = e.clientX;
+            mouseY = e.clientY;
+        });
+
+        window.addEventListener('touchmove', (e) => {
+            mouseX = e.touches[0].clientX;
+            mouseY = e.touches[0].clientY;
+        }, { passive: true });
+
+        // --- CLICK BURST ---
+        window.addEventListener('click', (e) => {
+            const cx = e.clientX;
+            const cy = e.clientY;
+            const burstCount = 40;
+
+            for (let i = 0; i < burstCount; i++) {
+                const angle = (Math.PI * 2 / burstCount) * i;
+                const speed = 2 + Math.random() * 6;
+                const life = 0.6 + Math.random() * 1.2;
+                const size = 2 + Math.random() * 5;
+                const hue = Math.random() < 0.5 ?
+                    (Math.random() < 0.5 ? 340 : 280) // pink/purple
+                    :
+                    (Math.random() < 0.5 ? 190 : 50); // cyan/gold
+
+                clickBursts.push({
+                    x: cx,
+                    y: cy,
+                    vx: Math.cos(angle) * speed,
+                    vy: Math.sin(angle) * speed,
+                    life,
+                    maxLife: life,
+                    size,
+                    hue,
+                });
+            }
+
+            // Heart pulse
+            targetHeartScale = 1.25;
+            setTimeout(() => { targetHeartScale = 1; }, 300);
+        });
+
+        // ============================================================
+        // HEART SHAPE FUNCTIONS
+        // ============================================================
+        function heartX(t) {
+            return 16 * Math.pow(Math.sin(t), 3);
+        }
+
+        function heartY(t) {
+            return -(13 * Math.cos(t) - 5 * Math.cos(2 * t) - 2 * Math.cos(3 * t) - Math.cos(4 * t));
+        }
+
+        // Heart boundary test (for particle respawn)
+        function isInsideHeart(x, y, scale) {
+            // Normalize coordinates
+            const nx = x / scale;
+            const ny = y / scale;
+
+            // Sample heart shape at many angles
+            for (let t = 0; t < Math.PI * 2; t += 0.05) {
+                const hx = heartX(t);
+                const hy = heartY(t);
+                const dist = Math.sqrt((nx - hx) ** 2 + (ny - hy) ** 2);
+                if (dist < 1.2) return true;
+            }
+            return false;
+        }
+
+        // Get closest point on heart surface
+        function closestHeartPoint(x, y, scale) {
+            const nx = x / scale;
+            const ny = y / scale;
+            let minDist = Infinity;
+            let bestX = 0,
+                bestY = 0;
+
+            for (let t = 0; t < Math.PI * 2; t += 0.01) {
+                const hx = heartX(t);
+                const hy = heartY(t);
+                const dist = Math.sqrt((nx - hx) ** 2 + (ny - hy) ** 2);
+                if (dist < minDist) {
+                    minDist = dist;
+                    bestX = hx * scale;
+                    bestY = hy * scale;
+                }
+            }
+            return { x: bestX, y: bestY, dist: minDist * scale };
+        }
+
+        // ============================================================
+        // PARTICLE CLASS
+        // ============================================================
+        class Particle {
+            constructor(type = 'heart') {
+                this.reset(type);
+            }
+
+            reset(type = 'heart') {
+                this.type = type;
+                this.life = 0.3 + Math.random() * 3;
+                this.maxLife = this.life;
+                this.size = 1.5 + Math.random() * 3.5;
+                this.trail = [];
+
+                // Color palette
+                const palettes = [
+                    { h: 340 + Math.random() * 20, s: 100, l: 55 + Math.random() * 25 }, // Neon pink
+                    { h: 280 + Math.random() * 30, s: 100, l: 50 + Math.random() * 25 }, // Neon purple
+                    { h: 190 + Math.random() * 15, s: 100, l: 50 + Math.random() * 25 }, // Neon cyan
+                    { h: 48 + Math.random() * 10, s: 100, l: 55 + Math.random() * 20 }, // Neon gold
+                ];
+                const palette = palettes[Math.floor(Math.random() * palettes.length)];
+                this.hue = palette.h;
+                this.saturation = palette.s;
+                this.lightness = palette.l;
+                this.alpha = 0.6 + Math.random() * 0.4;
+
+                // Position on heart surface
+                const t = Math.random() * Math.PI * 2;
+                const hx = heartX(t);
+                const hy = heartY(t);
+                const scale = 18 * heartScale;
+                this.x = hx * scale + W / 2;
+                this.y = hy * scale + H / 2;
+
+                // Small random offset
+                this.x += (Math.random() - 0.5) * 20;
+                this.y += (Math.random() - 0.5) * 20;
+
+                // Velocity (orbiting the heart)
+                const angle = Math.random() * Math.PI * 2;
+                const speed = 0.3 + Math.random() * 1.2;
+                this.vx = Math.cos(angle) * speed;
+                this.vy = Math.sin(angle) * speed;
+
+                // Orbital motion
+                this.orbitAngle = t;
+                this.orbitSpeed = (Math.random() - 0.5) * 0.03;
+                this.orbitRadius = 0.5 + Math.random() * 2;
+
+                // Glow
+                this.glowSize = this.size * (2 + Math.random() * 4);
+            }
+
+            update() {
+                this.life -= 0.003;
+                this.alpha = Math.max(0, this.life / this.maxLife);
+
+                // Orbital motion around heart
+                this.orbitAngle += this.orbitSpeed;
+                const t = this.orbitAngle;
+                const scale = 18 * heartScale;
+                const targetX = heartX(t) * scale + W / 2;
+                const targetY = heartY(t) * scale + H / 2;
+
+                // Move toward heart surface
+                const dx = targetX - this.x;
+                const dy = targetY - this.y;
+                const dist = Math.sqrt(dx * dx + dy * dy);
+
+                if (dist > 1) {
+                    const force = 0.08;
+                    this.vx += (dx / dist) * force;
+                    this.vy += (dy / dist) * force;
+                }
+
+                // Mouse interaction
+                const mdx = this.x - mouseX;
+                const mdy = this.y - mouseY;
+                const mdist = Math.sqrt(mdx * mdx + mdy * mdy);
+                if (mdist < 150) {
+                    const force = (150 - mdist) / 150 * 0.15;
+                    this.vx += (mdx / mdist) * force;
+                    this.vy += (mdy / mdist) * force;
+                }
+
+                // Damping
+                this.vx *= 0.99;
+                this.vy *= 0.99;
+
+                // Update position
+                this.x += this.vx;
+                this.y += this.vy;
+
+                // Trail
+                this.trail.push({ x: this.x, y: this.y, alpha: this.alpha });
+                if (this.trail.length > 8) this.trail.shift();
+
+                // Respawn if dead or too far
+                const centerDist = Math.sqrt(
+                    (this.x - W / 2) ** 2 + (this.y - H / 2) ** 2
+                );
+                if (this.life <= 0 || centerDist > Math.max(W, H)) {
+                    this.reset('heart');
+                }
+            }
+
+            draw(ctx) {
+                // Trail
+                if (this.trail.length > 1) {
+                    ctx.beginPath();
+                    ctx.moveTo(this.trail[0].x, this.trail[0].y);
+                    for (let i = 1; i < this.trail.length; i++) {
+                        ctx.lineTo(this.trail[i].x, this.trail[i].y);
+                    }
+                    ctx.strokeStyle = `hsla(${this.hue}, ${this.saturation}%, ${this.lightness}%, ${this.alpha * 0.3})`;
+                    ctx.lineWidth = this.size * 0.5;
+                    ctx.lineCap = 'round';
+                    ctx.stroke();
+                }
+
+                // Outer glow
+                const glow = ctx.createRadialGradient(this.x, this.y, 0, this.x, this.y, this.glowSize);
+                glow.addColorStop(0,
+                    `hsla(${this.hue}, ${this.saturation}%, ${this.lightness}%, ${this.alpha * 0.9})`);
+                glow.addColorStop(0.4,
+                    `hsla(${this.hue}, ${this.saturation}%, ${this.lightness}%, ${this.alpha * 0.4})`);
+                glow.addColorStop(1,
+                    `hsla(${this.hue}, ${this.saturation}%, ${this.lightness}%, 0)`);
+
+                ctx.fillStyle = glow;
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.glowSize, 0, Math.PI * 2);
+                ctx.fill();
+
+                // Core
+                const core = ctx.createRadialGradient(this.x, this.y, 0, this.x, this.y, this.size);
+                core.addColorStop(0, `rgba(255, 255, 255, ${this.alpha})`);
+                core.addColorStop(0.3,
+                    `hsla(${this.hue}, ${this.saturation}%, ${this.lightness + 20}%, ${this.alpha})`);
+                core.addColorStop(1,
+                    `hsla(${this.hue}, ${this.saturation}%, ${this.lightness}%, 0)`);
+
+                ctx.fillStyle = core;
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+                ctx.fill();
+            }
+        }
+
+        // ============================================================
+        // SPARKLE CLASS (floating decorative particles)
+        // ============================================================
+        class Sparkle {
+            constructor() {
+                this.reset();
+            }
+
+            reset() {
+                this.x = Math.random() * W;
+                this.y = Math.random() * H;
+                this.size = 0.5 + Math.random() * 2;
+                this.life = 1 + Math.random() * 3;
+                this.maxLife = this.life;
+                this.vx = (Math.random() - 0.5) * 0.4;
+                this.vy = -0.2 - Math.random() * 0.8;
+                this.hue = [340, 280, 190, 50][Math.floor(Math.random() * 4)];
+                this.twinkle = Math.random() * Math.PI * 2;
+            }
+
+            update() {
+                this.life -= 0.005;
+                this.x += this.vx;
+                this.y += this.vy;
+                this.twinkle += 0.05;
+
+                if (this.life <= 0 || this.y < -50 || this.y > H + 50 || this.x < -50 || this.x > W + 50) {
+                    this.reset();
+                    this.y = H + 30;
+                }
+            }
+
+            draw(ctx) {
+                const alpha = (this.life / this.maxLife) * (0.5 + 0.5 * Math.sin(this.twinkle));
+                const glow = ctx.createRadialGradient(this.x, this.y, 0, this.x, this.y, this.size * 3);
+                glow.addColorStop(0, `hsla(${this.hue}, 100%, 70%, ${alpha})`);
+                glow.addColorStop(1, `hsla(${this.hue}, 100%, 70%, 0)`);
+
+                ctx.fillStyle = glow;
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.size * 3, 0, Math.PI * 2);
+                ctx.fill();
+
+                ctx.fillStyle = `rgba(255,255,255,${alpha})`;
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+                ctx.fill();
+            }
+        }
+
+        // ============================================================
+        // CREATE PARTICLES
+        // ============================================================
+        const PARTICLE_COUNT = 400;
+        const SPARKLE_COUNT = 80;
+
+        for (let i = 0; i < PARTICLE_COUNT; i++) {
+            particles.push(new Particle('heart'));
+        }
+
+        const sparkles = [];
+        for (let i = 0; i < SPARKLE_COUNT; i++) {
+            sparkles.push(new Sparkle());
+        }
+
+        // ============================================================
+        // ANIMATION LOOP
+        // ============================================================
+        function animate() {
+            ctx.fillStyle = 'rgba(10, 10, 10, 0.15)';
+            ctx.fillRect(0, 0, W, H);
+
+            time += 0.016;
+
+            // Smooth heart scale
+            heartScale += (targetHeartScale - heartScale) * 0.08;
+            hueShift = Math.sin(time * 0.3) * 15;
+
+            // Update & draw sparkles
+            sparkles.forEach(s => {
+                s.update();
+                s.draw(ctx);
+            });
+
+            // Update & draw particles
+            particles.forEach(p => {
+                p.hue += hueShift * 0.01;
+                p.update();
+                p.draw(ctx);
+            });
+
+            // Update & draw click bursts
+            for (let i = clickBursts.length - 1; i >= 0; i--) {
+                const b = clickBursts[i];
+                b.life -= 0.02;
+                b.x += b.vx;
+                b.y += b.vy;
+                b.vy += 0.05; // gravity
+
+                const alpha = Math.max(0, b.life / b.maxLife);
+                const glow = ctx.createRadialGradient(b.x, b.y, 0, b.x, b.y, b.size * 2);
+                glow.addColorStop(0, `hsla(${b.hue}, 100%, 60%, ${alpha})`);
+                glow.addColorStop(1, `hsla(${b.hue}, 100%, 60%, 0)`);
+
+                ctx.fillStyle = glow;
+                ctx.beginPath();
+                ctx.arc(b.x, b.y, b.size * 2, 0, Math.PI * 2);
+                ctx.fill();
+
+                // Bright core
+                ctx.fillStyle = `rgba(255,255,255,${alpha})`;
+                ctx.beginPath();
+                ctx.arc(b.x, b.y, b.size * 0.5, 0, Math.PI * 2);
+                ctx.fill();
+
+                if (b.life <= 0) clickBursts.splice(i, 1);
+            }
+
+            // Draw subtle heart outline
+            ctx.save();
+            ctx.globalAlpha = 0.08 + Math.sin(time * 0.5) * 0.04;
+            ctx.strokeStyle = `hsl(${280 + hueShift}, 100%, 60%)`;
+            ctx.lineWidth = 1.5;
+            ctx.shadowColor = `hsl(${280 + hueShift}, 100%, 60%)`;
+            ctx.shadowBlur = 15;
+            ctx.beginPath();
+            const scale = 18 * heartScale;
+            for (let t = 0; t < Math.PI * 2; t += 0.02) {
+                const x = heartX(t) * scale + W / 2;
+                const y = heartY(t) * scale + H / 2;
+                if (t === 0) ctx.moveTo(x, y);
+                else ctx.lineTo(x, y);
+            }
+            ctx.closePath();
+            ctx.stroke();
+            ctx.restore();
+
+            requestAnimationFrame(animate);
+        }
+
+        // ============================================================
+        // START
+        // ============================================================
+        animate();
+        console.log('%c💖 %cNeon Particle Heart %cActive',
+            'font-size:1.5em;', 'color:#ff2d75;font-weight:bold;', 'color:#fff;');
+        console.log('%cClick anywhere for burst effects ✨', 'color:#b829e8;');
+    </script>
+</body>
+</html>
